@@ -10,16 +10,8 @@ from pydantic import BaseModel, Field, ConfigDict, computed_field, field_validat
 class BookBase(BaseModel):
     title: str = Field(..., description="Título del libro")
     author: str = Field(..., description="Autor del libro")
-    published_year: date = Field(..., description="Fecha de publicación")
     genre: str = Field(..., description="Género literario")
     total_copies: int = Field(..., ge=0, description="Total de copias disponibles en biblioteca")
-
-    @computed_field(return_type=int)
-    @property
-    def age_since_publication(self) -> int:
-        """Devuelve cuántos años han pasado desde la publicación."""
-        today = date.today()
-        return today.year - self.published_year.year
 
     @field_validator("total_copies")
     @classmethod
@@ -45,7 +37,6 @@ class BookCreate(BookBase):
 class BookUpdate(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
-    published_year: Optional[date] = None
     genre: Optional[str] = None
     total_copies: Optional[int] = Field(None, ge=0)
 
