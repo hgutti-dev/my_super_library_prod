@@ -1,0 +1,13 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+
+venv/
+
+# Ignorar cache de Python
+__pycache__/
+*.pyc
+
+# Ignorar configuraciones locales
+
+.DS_Store
+
+.env
