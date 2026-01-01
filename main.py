@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from src.db.db import get_client, DB_NAME
 from src.routes import book_routes as books_rts
+from src.routes import user_routes as users_rts
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +23,7 @@ app = FastAPI(
 
 # Registra rutas
 app.include_router(books_rts.router)
+app.include_router(users_rts.router)
 
 @app.get("/")
 async def root():
