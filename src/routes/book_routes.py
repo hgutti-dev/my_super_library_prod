@@ -32,10 +32,7 @@ async def create_book(
     return await service.create_book(payload)
 
 
-@router.get(
-    "",
-    response_model=List[BookRead],
-)
+@router.get("",response_model=List[BookRead],)
 async def list_books(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
