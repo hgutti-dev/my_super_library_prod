@@ -1,9 +1,28 @@
 # tests/test_books.py
 import pytest
 
+""" 
+Importa pytest.
+
+pytestmark = pytest.mark.anyio aplica el mark a todos los tests del archivo, para que pytest sepa que se ejecutan en modo async (con AnyIO).
+Eso permite que tus funciones async def test_...() corran bien.
+"""
 pytestmark = pytest.mark.anyio
 
 
+"""  
+Esto es un helper para no repetir JSON en cada test:
+
+Define un payload base válido para crear un libro (BookCreate).
+
+Te deja “sobrescribir” campos con overrides, ejemplo:
+
+sample_payload(title="Book X")
+
+sample_payload(total_copies=-1)
+
+Así tus tests quedan limpios y consistentes.
+"""
 def sample_payload(**overrides):
     """
     Payload base EXACTO para BookCreate (según src/schemas/book.py).
