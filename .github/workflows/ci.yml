@@ -1,11 +1,14 @@
 name: CI
 
+# Triggers: cuándo corre el pipeline
+
 on:
   push:
     branches: ["master", "developer"]
   pull_request:
     branches: ["master"]
 
+# Permisos del workflow
 permissions:
   contents: read
   packages: write
@@ -14,6 +17,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Aquí GitHub Actions levanta un contenedor MongoDB como “servicio” para tus tests.
     services:
       mongo:
         image: mongo:7
@@ -70,7 +74,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: backend.Dockerfile
+          file: Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/my-super-library:latest

@@ -19,19 +19,23 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import sys
 from pathlib import Path
 
+""" 
+ROOT = ...parents[1] apunta a la raíz del repo (sube desde tests/ al root del proyecto).
+sys.path.insert(0, str(ROOT)) mete esa ruta al inicio del PYTHONPATH.
+"""
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from main import app
 from src.db import db as db_module  # para overridear get_db
 
-
+# Fixture anyio_backend: soporte async para pytest-anyio
 @pytest.fixture(scope="session")
 def anyio_backend():
     # Necesario para que pytest soporte async correctamente
     return "asyncio"
 
-
+# Fixture test_mongo_uri: decide a qué Mongo se conectan los tests
 @pytest.fixture(scope="session")
 def test_mongo_uri():
     # En CI lo pondremos como env var (mongo service).
@@ -45,11 +49,13 @@ def test_mongo_uri():
     return uri
 
 
+# Fixture test_db_name: nombre de la DB usada en pruebas
 @pytest.fixture(scope="session")
 def test_db_name():
     return os.getenv("DB_NAME_TEST", "my_super_library_test")
 
 
+# Fixture mongo_client: crea y cierra el cliente Motor (Mongo)
 @pytest.fixture(scope="session")
 async def mongo_client(test_mongo_uri):
     client = AsyncIOMotorClient(test_mongo_uri)
@@ -57,6 +63,16 @@ async def mongo_client(test_mongo_uri):
     client.close()
 
 
+# Fixture test_db: devuelve la base y la limpia antes de cada test
+""" 
+¿Por qué “function”?
+
+Porque quieres aislamiento:
+
+test A no debe contaminar el estado del test B
+
+cada test inicia con DB vacía
+"""
 @pytest.fixture(scope="function")
 async def test_db(mongo_client, test_db_name):
     db = mongo_client[test_db_name]
@@ -69,12 +85,14 @@ async def test_db(mongo_client, test_db_name):
     yield db
 
 
+# Fixture client: crea el AsyncClient y overridea la dependencia get_db
+
 @pytest.fixture(scope="function")
 async def client(test_db):
     async def override_get_db():
         yield test_db
 
-    app.dependency_overrides[db_module.get_db] = override_get_db
+    app.dependency_overrides[db_module.get_db] = override_get_db # Eso significa: “cada vez que un endpoint pida get_db, en tests usa otro get_db diferente”.
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -83,3 +101,22 @@ async def client(test_db):
     app.dependency_overrides.clear()
 
 
+# RESUMEN: QUE LOGRA ESTE CONFTEST ??
+
+""" 
+Pytest:
+
+crea mongo_client (1 vez por sesión)
+
+para ese test:
+
+limpia la DB
+
+hace override del get_db para usar esa DB limpia
+
+crea un AsyncClient pegado a FastAPI
+
+corre el test
+
+limpia overrides
+"""
