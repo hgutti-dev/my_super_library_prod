@@ -18,10 +18,10 @@ def get_user_service(db: AsyncIOMotorDatabase = Depends(get_db)) -> UserService:
 
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("", status_code=status.HTTP_200_OK)
 async def list_all_users():
     return {"message": "Get All - Users"}
 
-@router.post("/",response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post("",response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_book(payload: UserCreate, service: UserService = Depends(get_user_service)) -> UserRead:
     return await service.create_user(payload)

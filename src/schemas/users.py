@@ -13,7 +13,6 @@ class UserBase(BaseModel):
     last_name: str = Field(..., description="Apellido del usuario")
     email: EmailStr = Field(..., description="Correo electrónico único del usuario")
     role: str = Field(..., description="Rol del usuario dentro del sistema. Ej: admin, staff, customer")
-    registered_date: date = Field(default_factory=datetime.today)
 
     @computed_field(return_type=str)
     @property
