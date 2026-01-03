@@ -1,7 +1,7 @@
 from typing import List, Optional
-from datetime import date
+from datetime import datetime, date
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, computed_field, field_validator
-from loans import LoanWithBook
+""" from loans import LoanWithBook """
 
 
 # ======================================================
@@ -13,7 +13,7 @@ class UserBase(BaseModel):
     last_name: str = Field(..., description="Apellido del usuario")
     email: EmailStr = Field(..., description="Correo electrónico único del usuario")
     role: str = Field(..., description="Rol del usuario dentro del sistema. Ej: admin, staff, customer")
-    registered_date: date = Field(default_factory=date.today)
+    registered_date: date = Field(default_factory=datetime.today)
 
     @computed_field(return_type=str)
     @property
@@ -79,8 +79,8 @@ class UserRead(UserBase):
 # ===========  READ MODEL FOR USER'S LOANS  ============
 # ======================================================
 
-class UserReadWithLoans(UserRead):
+""" class UserReadWithLoans(UserRead):
     loans: List[LoanWithBook] = Field(
         default_factory=list,
         description="Listado de préstamos actuales e históricos del usuario"
-    )
+    ) """
