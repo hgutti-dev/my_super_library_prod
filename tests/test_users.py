@@ -114,14 +114,14 @@ async def test_update_user_patch(client):
 
     patch_res = await client.patch(
         f"/users/{user_id}",
-        json={"first_name": "New", "role": "librarian"},
+        json={"first_name": "New", "role": "admin"},
     )
     assert patch_res.status_code == 200, patch_res.text
     updated = patch_res.json()
 
     assert updated["id"] == user_id
     assert updated["first_name"] == "New"
-    assert updated["role"] == "librarian"
+    assert updated["role"] == "admin"
     assert updated["email"] == "patch@test.com"
     assert "password" not in updated
     assert "hashed_password" not in updated
