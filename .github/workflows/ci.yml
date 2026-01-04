@@ -54,7 +54,7 @@ jobs:
   docker_build:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/developer')
 
     steps:
       - name: Checkout
@@ -79,3 +79,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/my-super-library:latest
             ghcr.io/${{ github.repository_owner }}/my-super-library:${{ github.sha }}
+
+      - name: Trigger Render deploy
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
