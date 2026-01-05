@@ -11,8 +11,8 @@ permissions:
   packages: write
 
 env:
-  IMAGE_NAME: my-super-library
   REGISTRY: ghcr.io
+  IMAGE_NAME: my-super-library
 
 jobs:
   test:
@@ -56,7 +56,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
 
-    # Solo en pushes a master/developer (no PRs)
+    # solo en pushes (no PRs)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/developer')
 
     steps:
@@ -83,23 +83,26 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Trigger Render deploy (DEBUG)
+      - name: Deploy to Render (Deploy Hook + imgURL=SHA)
         env:
           DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           OWNER: ${{ github.repository_owner }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
           SHA: ${{ github.sha }}
           REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          set -x   # 👈 imprime comandos
-          set -u
+          set -euo pipefail
 
-          echo "DEPLOY_HOOK_URL=${DEPLOY_HOOK_URL}"
+          if [ -z "${DEPLOY_HOOK_URL:-}" ]; then
+            echo "Missing secret: RENDER_DEPLOY_HOOK_URL"
+            exit 1
+          fi
 
+          # ghcr.io/<owner>/<image>:<sha> URL-encoded
           IMG_URL_ENC="${REGISTRY}%2F${OWNER}%2F${IMAGE_NAME}%3A${SHA}"
-          echo "IMG_URL_ENC=${IMG_URL_ENC}"
 
-          FULL_URL="${DEPLOY_HOOK_URL}&imgURL=${IMG_URL_ENC}"
-          echo "FULL_URL=${FULL_URL}"
+          echo "Triggering Render deploy with image: ${REGISTRY}/${OWNER}/${IMAGE_NAME}:${SHA}"
 
-          curl -v "${FULL_URL}"
+          curl -fsS "${DEPLOY_HOOK_URL}&imgURL=${IMG_URL_ENC}"
+
+          echo "Render deploy triggered successfully."
