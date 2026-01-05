@@ -27,5 +27,5 @@ app.include_router(users_rts.router)
 
 @app.get("/")
 async def root():
-    return {"ok": True, "msg": "Welcome to My Super Library API :)!!"}
+    return {"ok": True, "msg": "Welcome to My Super Library API, We are glad to have you here :)!!"}
 

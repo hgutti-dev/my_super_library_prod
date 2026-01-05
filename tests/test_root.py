@@ -37,4 +37,4 @@ async def test_root_ok(client):
     assert res.status_code == 200
     data = res.json()
     assert data["ok"] is True
-    assert "Welcome to My Super Library API :)!!" in data["msg"]
+    assert "Welcome to My Super Library API, We are glad to have you here :)!!" in data["msg"]
