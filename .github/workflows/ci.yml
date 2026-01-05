@@ -51,7 +51,7 @@ jobs:
       - name: Run tests
         run: pytest -q
 
-  docker_build_and_deploy:
+  docker_build:
     needs: test
     runs-on: ubuntu-latest
 
@@ -83,8 +83,8 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # ✅ DEPLOY a Render apuntando al TAG SHA
       # Esto fuerza un deploy “nuevo” con ese tag.
