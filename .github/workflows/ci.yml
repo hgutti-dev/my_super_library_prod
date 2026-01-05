@@ -83,7 +83,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
 
-      - name: Trigger Render deploy (Deploy Hook + imgURL=SHA)
+      - name: Trigger Render deploy (DEBUG)
         env:
           DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           OWNER: ${{ github.repository_owner }}
@@ -91,19 +91,15 @@ jobs:
           SHA: ${{ github.sha }}
           REGISTRY: ${{ env.REGISTRY }}
         run: |
-          set -euo pipefail
+          set -x   # 👈 imprime comandos
+          set -u
 
-          if [ -z "${DEPLOY_HOOK_URL:-}" ]; then
-            echo "Missing secret: RENDER_DEPLOY_HOOK_URL"
-            exit 1
-          fi
+          echo "DEPLOY_HOOK_URL=${DEPLOY_HOOK_URL}"
 
-          # imgURL debe coincidir con el repo/registry del Image URL en Render,
-          # solo cambia el tag/digest. Render espera URL-encoded.
-          # ghcr.io/<owner>/<image>:<sha>  =>  ghcr.io%2F<owner>%2F<image>%3A<sha>
           IMG_URL_ENC="${REGISTRY}%2F${OWNER}%2F${IMAGE_NAME}%3A${SHA}"
+          echo "IMG_URL_ENC=${IMG_URL_ENC}"
 
-          # Si el hook ya trae ?key=... entonces se concatena con &
-          curl -fsS "${DEPLOY_HOOK_URL}&imgURL=${IMG_URL_ENC}"
+          FULL_URL="${DEPLOY_HOOK_URL}&imgURL=${IMG_URL_ENC}"
+          echo "FULL_URL=${FULL_URL}"
 
-          echo "Render deploy triggered with image: ${REGISTRY}/${OWNER}/${IMAGE_NAME}:${SHA}"
+          curl -v "${FULL_URL}"
