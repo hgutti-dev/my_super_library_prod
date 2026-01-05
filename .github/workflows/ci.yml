@@ -11,8 +11,8 @@ permissions:
   packages: write
 
 env:
-  REGISTRY: ghcr.io
   IMAGE_NAME: my-super-library
+  REGISTRY: ghcr.io
 
 jobs:
   test:
@@ -51,13 +51,16 @@ jobs:
       - name: Run tests
         run: pytest -q
 
-  docker_build_and_deploy:
-    name: Build, Push Image, Deploy to Render
+  docker_build:
     needs: test
     runs-on: ubuntu-latest
 
     # solo en pushes (no PRs)
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/developer')
+
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
 
     steps:
       - name: Checkout
@@ -69,7 +72,7 @@ jobs:
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -80,29 +83,35 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Deploy to Render (Deploy Hook + imgURL=SHA)
-        env:
-          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          OWNER: ${{ github.repository_owner }}
-          SHA: ${{ github.sha }}
-          REGISTRY: ${{ env.REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      # ✅ DEPLOY a Render apuntando al TAG SHA
+      # Esto fuerza un deploy “nuevo” con ese tag.
+      - name: Deploy on Render using SHA tag
         run: |
           set -euo pipefail
 
-          if [ -z "${DEPLOY_HOOK_URL:-}" ]; then
-            echo "Missing secret: RENDER_DEPLOY_HOOK_URL"
-            exit 1
+          if [ -z "${RENDER_API_KEY:-}" ] || [ -z "${RENDER_SERVICE_ID:-}" ]; then
+            echo "Missing RENDER_API_KEY or RENDER_SERVICE_ID. Skipping deploy."
+            exit 0
           fi
 
-          # ghcr.io/<owner>/<image>:<sha> URL-encoded
-          IMG_URL_ENC="${REGISTRY}%2F${OWNER}%2F${IMAGE_NAME}%3A${SHA}"
+          OWNER="${{ github.repository_owner }}"
+          IMAGE="${REGISTRY}/${OWNER}/${IMAGE_NAME}:${{ github.sha }}"
 
-          echo "Triggering Render deploy with image: ${REGISTRY}/${OWNER}/${IMAGE_NAME}:${SHA}"
+          echo "Deploying Render service ${RENDER_SERVICE_ID} with image: ${IMAGE}"
 
-          curl -fsS "${DEPLOY_HOOK_URL}&imgURL=${IMG_URL_ENC}"
+          # 1) Update service image (PATCH)
+          curl -fsS -X PATCH "https://api.render.com/v1/services/${RENDER_SERVICE_ID}" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            --data-raw "{\"image\":{\"imagePath\":\"${IMAGE}\"}}"
 
-          echo "Render deploy triggered successfully."
+          # 2) Trigger a deploy (POST)
+          curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json" \
+            --data-raw "{}"
+
+          echo "Render deploy triggered."
