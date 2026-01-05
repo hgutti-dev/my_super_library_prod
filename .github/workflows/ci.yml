@@ -90,10 +90,17 @@ jobs:
           set -euo pipefail
 
           if [ -z "${RENDER_DEPLOY_HOOK:-}" ]; then
-            echo "Missing RENDER_DEPLOY_HOOK. Skipping deploy."
-            exit 0
+            echo "Missing RENDER_DEPLOY_HOOK."
+            exit 1
           fi
 
           echo "Triggering Render deploy hook..."
-          curl -fsS -X POST "${RENDER_DEPLOY_HOOK}"
+          http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "${RENDER_DEPLOY_HOOK}")
+          echo "Render responded with HTTP ${http_code}"
+
+          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
+            echo "Deploy hook failed."
+            exit 1
+          fi
+
           echo "Render deploy triggered."
